@@ -26,9 +26,9 @@ while(!done){
     
   }
 }
-
 #Data cleaning#################
 prices<-lapply(pricedata,function(x)x[,6])
+colnames(prices)<-gsub("\\..*","", colnames(prices))
 len<-summary(sapply(prices,length))[2]
 #gets rid of stock data that is shorter than the rest
 prices = prices[-which(sapply(prices, function(x)length(x)<len))]
