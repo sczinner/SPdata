@@ -17,3 +17,7 @@ tickers<-my.table$`Ticker symbol`
 names(tickers)<-my.table$Security
 #take a look at the tickers
 unname(tickers)
+
+#this may not work depending if the formatting of the wikipedia page changes
+#but should be easy to fix for any format.
+write.csv(tickers,paste("tickers",oldid,".csv",sep=""))

@@ -1,10 +1,12 @@
-source(file="SPtickersfromwikipedia.R")#this should load tickers from 2015-12-28
+#source(file="SPtickersfromwikipedia.R")#this should load tickers from 2015-12-28
+source(file="SPtickersAnalyzingAlpha.R")
 library(quantmod)#for downloading yahoo finance daily prices
 #Download Data#################
 
 pricedata<-list()
 
-date="2016-01-01"#should use a date close to the date of historic S&P tickers
+date="2000-02-01"#should use a date close to the date of historic S&P tickers
+tickers<-getTickersDate(date)
 done=FALSE#continue until tries downloading all and doesn't download a single one
 while(!done){
   done=TRUE
@@ -28,28 +30,39 @@ while(!done){
 }
 #Data cleaning#################
 prices<-lapply(pricedata,function(x)x[,6])
-colnames(prices)<-gsub("\\..*","", colnames(prices))
-len<-summary(sapply(prices,length))[2]
+len<-summary(sapply(prices,length))[6]
 #gets rid of stock data that is shorter than the rest
-prices = prices[-which(sapply(prices, function(x)length(x)<len))]
-prices<-as.data.frame(prices)
+indremove<-which(sapply(prices, function(x)length(x)!=len))
+if(length(indremove)>0){
+  prices1 = prices[-indremove]
+}else{
+  prices1=prices
+}
+
+prices1<-as.data.frame(prices1)
+colnames(prices1)<-gsub("\\..*","", colnames(prices1))
 
 #gets rid of stocks that have too many NA
-nremove<-summary(apply(prices,2,function(x)sum(is.na(x))))[2]
+nremove<-summary(apply(prices1,2,function(x)sum(is.na(x))))[2]
 
-indremove<-which(apply(prices,2,function(x)sum(is.na(x)))>nremove)
-prices<-prices[,-indremove]
+indremove<-which(apply(prices1,2,function(x)sum(is.na(x)))>nremove)
+if(length(indremove)>0){
+  prices2<-prices1[,-indremove]
+}else{
+  prices2<-prices1
+}
 
-max(apply(prices,2,function(x)sum(is.na(x))))
+
+max(apply(prices2,2,function(x)sum(is.na(x))))
 #get rid of any *days* with incomplete data
-prices<-prices[complete.cases(prices),]
+prices3<-prices2[complete.cases(prices2),]
 
-length(which(!complete.cases(prices)))
-datetext<-rownames(prices[,1:2])
+length(which(!complete.cases(prices3)))
+datetext<-rownames(prices3[,1:2])
 
 #returns##############
 
-returns<-apply(prices,2,function(x)diff(log(x)))
+returns<-apply(prices3,2,function(x)diff(log(x)))
 returndate<-as.Date(datetext[-1])
 
 #This should get rid of stocks whose returns are identical (stocks which have
@@ -62,5 +75,6 @@ while(max(A[lower.tri(A)])>lim){
   returns<-returns[,-rem[1]]
   A<-cor(returns)
 }
-
+returns<-as.data.frame(returns)
+rownames(returns)<-as.character(returndate)
 write.csv(returns,paste("SPreturns",date,tail(returndate,1),".csv",sep=""))
